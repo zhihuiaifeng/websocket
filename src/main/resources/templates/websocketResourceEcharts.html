@@ -1,0 +1,109 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>图表</title>
+    <script src="../static/js/jquery-1.12.4.js"
+            th:href=@{/js/jquery-1.12.4.js}></script>
+    <script src="../static/js/echarts.min.js" th:href=@{/js/echarts.min.js}></script>
+</head>
+<body>
+<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+<div id="main" style="width: 800px; height: 450px;"></div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('main'));
+        //数据加载完之前先显示一段简单的loading动画
+        myChart.showLoading();
+        var times = []; //横坐标数组（实际用来盛放X轴坐标值）
+        var cpuValues = []; //纵坐标数组（实际用来盛放Y坐标值）
+        var memoryValues = [];
+
+        var websocket = null;
+
+        //判断当前浏览器是否支持WebSocket
+        if ('WebSocket' in window) {
+            websocket = new WebSocket("ws://localhost:8080/resourceWebSocket");
+        } else {
+            alert('Not support websocket')
+        }
+
+        //连接发生错误的回调方法
+        websocket.onerror = function () {
+            setMessageInnerHTML("error");
+        };
+
+        //连接成功建立的回调方法
+        websocket.onopen = function (event) {
+            setMessageInnerHTML("open");
+        }
+
+        //接收到消息的回调方法
+        websocket.onmessage = function (event) {
+            //请求成功时执行该函数内容，result即为服务器返回的json对象
+            var reslut = eval("(" + event.data + ")");
+            if (reslut) {
+                $.each(reslut, function (i, item) {
+                    times.push(item.time);
+                    cpuValues.push(item.cpuNum);
+                    memoryValues.push(item.memoryNum);
+                });
+                myChart.hideLoading(); //隐藏加载动画
+                myChart.setOption({ //加载数据图表
+                    tooltip: {},
+                    legend: {
+                        data: ['CPU资源占用', '内存资源占用']
+                    },
+                    xAxis: {
+                        data: times
+                    },
+                    yAxis: {
+                        type: 'value'
+                    },
+                    series: [{
+                        // 根据名字对应到相应的系列
+                        name: 'CPU资源占用',//薪资 series not exists. Legend data should be same with series name or data name.
+                        type: 'line',
+                        data: cpuValues
+                    }, {
+                        // 根据名字对应到相应的系列
+                        name: '内存资源占用',//薪资 series not exists. Legend data should be same with series name or data name.
+                        type: 'line',
+                        data: memoryValues
+                    }]
+                });
+            }
+        }
+
+        //连接关闭的回调方法
+        websocket.onclose = function () {
+            setMessageInnerHTML("close");
+        }
+
+        //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+        window.onbeforeunload = function () {
+            websocket.close();
+        }
+
+        //将消息显示在网页上
+        function setMessageInnerHTML(innerHTML) {
+
+        }
+
+        //关闭连接
+        function closeWebSocket() {
+            websocket.close();
+        }
+
+        //发送消息
+        function send() {
+            var message = document.getElementById('text').value;
+            websocket.send(message);
+        }
+
+    });
+</script>
+
+</body>
+</html>
