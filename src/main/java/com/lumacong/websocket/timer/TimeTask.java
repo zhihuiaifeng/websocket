@@ -1,13 +1,16 @@
 package com.lumacong.websocket.timer;
 
 import com.alibaba.fastjson.JSON;
+import com.lumacong.websocket.server.MysqlSocketServer;
 import com.lumacong.websocket.server.ResourceSocketServer;
 import com.lumacong.websocket.server.WebSocketServer;
+import com.lumacong.websocket.service.MysqlService;
 import com.lumacong.websocket.vo.Echars;
 import com.lumacong.websocket.vo.Resource;
 import com.sun.management.OperatingSystemMXBean;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,6 +26,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Component
 @EnableScheduling
 public class TimeTask {
+    @Autowired
+    MysqlService mysqlService;
+
     static Log log = LogFactory.getLog(TimeTask.class);
     SimpleDateFormat sdf = new SimpleDateFormat("mm:ss");
     private static OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
@@ -59,6 +65,15 @@ public class TimeTask {
                 List<Resource> list = new ArrayList<Resource>();
                 list.add(new Resource(sdf.format(new Date()), percentCpuLoad, percentMemoryLoad));
                 c.sendMessage(JSON.toJSONString(list));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+
+        CopyOnWriteArraySet<MysqlSocketServer> mysqlSocketServer = MysqlSocketServer.getWebSocketSet();
+        mysqlSocketServer.forEach(c -> {
+            try {
+                c.sendMessage(JSON.toJSONString(mysqlService.queryUsers()));
             } catch (IOException e) {
                 e.printStackTrace();
             }

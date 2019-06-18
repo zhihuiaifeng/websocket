@@ -23,8 +23,13 @@ public class IndexController {
     }
 
     @RequestMapping("websocketResourceEcharts")
-    public String cpu(Model model) {
+    public String websocketResourceEcharts(Model model) {
         return "websocketResourceEcharts";
+    }
+
+    @RequestMapping("websocketMysqlEcharts")
+    public String websocketMysqlEcharts(Model model) {
+        return "websocketMysqlEcharts";
     }
 
 }
